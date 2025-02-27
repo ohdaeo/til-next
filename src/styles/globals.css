@@ -1,0 +1,55 @@
+@font-face {
+  font-family: "Ownglyph_brilliant-Rg";
+  src: url("https://fastly.jsdelivr.net/gh/projectnoonnu/2412-1@1.0/Ownglyph_brilliant-Rg.woff2")
+    format("woff2");
+  font-weight: normal;
+  font-style: normal;
+}
+* {
+  font-family: "Ownglyph_brilliant-Rg" !important;
+  word-break: break-all;
+  margin: 0;
+  padding: 0;
+}
+h1 {
+  font-size: 48px;
+}
+h2 {
+  font-size: 40px;
+}
+h3 {
+  font-size: 36px;
+}
+h4 {
+  font-size: 28px;
+}
+h5 {
+  font-size: 24px;
+}
+body {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+button {
+  margin: 10px;
+  background-color: #000;
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 16px;
+  cursor: pointer;
+}
+input {
+  padding: 10px 20px;
+  border-radius: 30px;
+  margin: 20px;
+  border: 1px solid #000;
+}
+
+a {
+  padding: 5px 10px;
+  border: 2px dashed #000;
+  border-radius: 8px;
+  margin-right: 15px;
+}
