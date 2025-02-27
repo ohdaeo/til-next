@@ -1,4 +1,4 @@
-![nextjs](https://noticon-static.tammolo.com/dgggcrkxq/image/upload/v1566879300/noticon/fvty9lnsbjol5lq9u3by.svg){: width=200px}
+![nextjs](https://svgmix.com/uploads/0b55b6-nextjs-icon.svg)
 
 # Next.js
 
