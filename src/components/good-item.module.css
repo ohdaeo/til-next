@@ -1,0 +1,29 @@
+.container {
+  width: 100%;
+  display: flex;
+  padding: 24px 12px;
+  border-bottom: 1px solid #ddd;
+}
+.container:last-child {
+  border: none;
+}
+.container > .img {
+  width: 80px;
+  aspect-ratio: 1 / 1;
+  object-fit: contain;
+}
+.container > .txt {
+  margin-left: 24px;
+}
+.container > .txt h5 {
+}
+.container > .txt p {
+  color: #999;
+}
+
+.container > .txt .rate {
+  color: #a200ff;
+}
+.container > .price {
+  margin-top: 32px;
+}
