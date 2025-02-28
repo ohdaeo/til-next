@@ -1,107 +1,30 @@
 ![nextjs](https://svgmix.com/uploads/0b55b6-nextjs-icon.svg)
 
-# Pages Router
+# API
 
-- http://localhost:3000
-- /src/pages/index.tsx
+- 서버리스 함수 디렉토리
+- 이 폴더의 파일들은 자동으로 API 엔드포인트로 변환된다.
+- 서버를 직접 관리하지 않고 백엔드 로직을 구현할 수 있다.
+- 각 파일은 개별적인 API 엔드포인트를 나타내며, 파일 이름이 엔드포인트 경로가 된다.
 
-```tsx
-export default function Home() {
-  return <h1>Home</h1>;
-}
-```
+### 예제
 
-### 라우터 설정
-
-**Query String**
-
-- src\pages\search.tsx
-- http://localhost:3000/search?keyword={keyword}
+- src\pages\api\getallgood.tsx
+- http://localhost:3000/api/getallgood
 
 ```tsx
-import { useRouter } from "next/router";
+import type { NextApiRequest, NextApiResponse } from "next";
 
-export default function Page() {
-  const router = useRouter();
-  const { keyword } = router.query;
-  return (
-    <div>
-      <b>{keyword}</b>
-    </div>
-  );
-}
-```
+type Data = {
+  name: string;
+};
 
-**Params**
-
-- src\pages\good\[id].tsx
-- http://localhost:3000/good/[id]
-
-```tsx
-import { useRouter } from "next/router";
-
-export default function Page() {
-  const router = useRouter();
-  const { id } = router.query;
-  return (
-    <div>
-      <h1>
-        <b>{id}번</b>제품 정보
-      </h1>
-    </div>
-  );
-}
-```
-
-**404**
-
-- src\pages\404.tsx _해당 파일명 지키기_
-- http://localhost:3000/NotFound
-
-```tsx
-export default function Page() {
-  return (
-    <div>
-      <h1>잘못된 주소로 접근하셨습니다.</h1>
-    </div>
-  );
-}
-```
-
-### Navigation
-
-##### Link
-
-- 클라이언트 측 라우팅을 사용하여 페이지 이동을 수행하는 기능이다.
-- Link 로 연결된 주소는 사전에 자동으로 html 이 만들어진다.
-
-- src/pages/\_app.tsx
-
-```tsx
-import "@/styles/globals.css";
-import type { AppProps } from "next/app";
-import Link from "next/link";
-import { useRouter } from "next/router";
-
-export default function App({ Component, pageProps }: AppProps) {
-  const router = useRouter();
-  const handleClick = () => {
-    router.push("/");
-  };
-
-  return (
-    <>
-      <header>
-        <Link href={"/"}>홈</Link>
-        <Link href={"/search?keyword=Boo"}>검색</Link>
-        <Link href={"/good/1"}>제품 상세</Link>
-        <button onClick={handleClick}>홈으로 이동하기</button>
-      </header>
-      <main>
-        <Component {...pageProps} />
-      </main>
-      <footer></footer>
-    </>
-  );
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse<Data>
+) {
+  const data = await fetch("https://fakestoreapi.com/products");
+  const json = await data.json();
+  res.status(200).json(json);
 }
 ```
