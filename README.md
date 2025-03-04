@@ -333,3 +333,80 @@ export default function Page() {
   );
 }
 ```
+
+**NextPage**
+
+- 타입을 확장하여 선택적으로 getLayout 함수를 포함하는 타입입니다.
+
+```tsx
+@type {NextPageWithLayout}
+@property {function} [getLayout]
+```
+
+- ReactNode(페이지)를 받아서 ReactNode를 반환하는 선택적 함수입니다.
+- 이 함수는 페이지를 레이아웃 컴포넌트로 감싸는 데 사용할 수 있습니다.
+
+- \_app.tsx
+
+```tsx
+import GlobalLayout from "@/components/global-layout";
+import "@/styles/globals.css";
+import { NextPage } from "next";
+import type { AppProps } from "next/app";
+import { ReactNode } from "react";
+
+// 속성을 추가해준다. 확장도 한다.
+
+type NextPageWithLayout = NextPage & {
+  getLayout?: (page: ReactNode) => ReactNode;
+};
+
+export default function App({
+  Component,
+  pageProps,
+}: AppProps & {
+  Component: NextPageWithLayout;
+}) {
+  // console.log(Component.getLayout);
+  // 출력을 확인해 보자. (에러 신경쓰지말고)
+  // Property 'getLayout' does not exist on type 'NextComponentType<NextPageContext, any, any>'.
+  const getLayout = Component.getLayout ?? ((page: ReactNode) => page);
+  return <GlobalLayout>{getLayout(<Component {...pageProps} />)}</GlobalLayout>;
+}
+```
+
+- index.tsx
+
+```tsx
+import styles from "@/pages/index.module.css";
+import goods from "@/mock/gooda.json";
+import GoodItem from "@/components/good-item";
+import { ReactNode } from "react";
+import SearchLayout from "@/components/search-layout";
+
+export default function Home() {
+  return (
+    <div>
+      <section className={styles.container}>
+        <h3>지금 추천하는 상품</h3>
+        {/* 랜덤 3개 출력 */}
+        {goods.slice(0, 3).map((item) => (
+          <GoodItem key={item.id} {...item} />
+        ))}
+      </section>
+      <section className={styles.container}>
+        <h3>모든 상품</h3>
+        {/* 전체 출력 */}
+        {goods.map((item) => (
+          <GoodItem key={item.id} {...item} />
+        ))}
+      </section>
+    </div>
+  );
+}
+
+// js 에서는 함수도 객체 이고, 객체에는 속성을 추가할 수 있다.
+Home.getLayout = (page: ReactNode) => {
+  return <SearchLayout>{page}</SearchLayout>;
+};
+```

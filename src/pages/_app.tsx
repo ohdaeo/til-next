@@ -5,6 +5,7 @@ import type { AppProps } from "next/app";
 import { ReactNode } from "react";
 
 // 속성을 추가해준다. 확장도 한다.
+
 type NextPageWithLayout = NextPage & {
   getLayout?: (page: ReactNode) => ReactNode;
 };
