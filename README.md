@@ -1,247 +1,38 @@
 ![nextjs](https://svgmix.com/uploads/0b55b6-nextjs-icon.svg)
 
-# 사전 렌더링 (Pre-rendering)
+# SSG
 
-Next.js는 두 가지 사전 렌더링 방식을 지원합니다.
+Static Site Generation(정적 사이트 생성)
+빌드 시점: 개발자가 애플리케이션 또는 Next 프로젝트를 빌드할 때 사전 렌더링 페이지가 생성됩니다.
+변경 불가: 배포된 후에는 사전 렌더링 페이지가 변경되지 않으므로, 변경하려면 빌드와 재 배포가 필요합니다.
+용도: 자주 바뀌지 않는 페이지에 적합합니다.
+사용 범위: 'pages' 폴더 내의 컴포넌트 파일에서만 사용 가능합니다.
+성능: Static에 캐시되어 빠른 응답을 제공합니다.
 
-1. Static Generation(정적 생성): 빌드 시 HTML을 생성합니다.
-2. Server-side Rendering(서버 측 렌더링): 각 요청마다 HTML을 생성합니다.
-
-# 데이터 패칭 (Data Fetching)
-
-Next.js는 세 가지 데이터 패칭 방식을 지원합니다.
-
-**1. SSR**
-서버 측에서 데이터를 가져와 렌더링합니다.
-
-**2. SSG**
-빌드 시 데이터를 가져와 정적 페이지를 생성합니다.
-
-**3. ISR**
-정적 페이지를 주기적으로 재생성합니다.
-
-### 기본예제 (데이터 패칭 적용)
-
-- index.tsx
-
-```tsx
-import styles from "@/pages/index.module.css";
-import goods from "@/mock/gooda.json";
-import GoodItem from "@/components/good-item";
-import { ReactNode } from "react";
-import SearchLayout from "@/components/search-layout";
-import { InferGetServerSidePropsType } from "next";
-
-/*
-Next 에선 약속된 함수가 있다.
-SSR 데이터 패칭을 위해서는 해당 함수만을 사용하여야 한다. 
-*/
-
-export const getServerSideProps = async () => {
-  console.log("getServerSideProps 함수 서버에서 먼저 실행");
-  const data = "getServerSideProps 함수 서버에서 먼저 실행 ";
-
-  // 서버에서는 window 등의 웹브라우저용 js 를 사용할수없다.
-  window.location;
-  // 항상 객체를 리턴하고, 반드시 prop 라는 속성이 있어야 한다.
-  return {
-    props: {
-      // 모든 데이터를 props 객체 안에 넣어야 함
-      data,
-    },
-  };
-};
-
-export default function Home({
-  data,
-}: InferGetServerSidePropsType<typeof getServerSideProps>) {
-  console.log(data);
-
-  return (
-    <div>
-      <section className={styles.container}>
-        <h3>지금 추천하는 상품</h3>
-        {/* 랜덤 3개 출력 */}
-        {goods.slice(0, 3).map((item) => (
-          <GoodItem key={item.id} {...item} />
-        ))}
-      </section>
-      <section className={styles.container}>
-        <h3>모든 상품</h3>
-        {/* 전체 출력 */}
-        {goods.map((item) => (
-          <GoodItem key={item.id} {...item} />
-        ))}
-      </section>
-    </div>
-  );
-}
-
-// js 에서는 함수도 객체 이고, 객체에는 속성을 추가할 수 있다.
-Home.getLayout = (page: ReactNode) => {
-  return <SearchLayout>{page}</SearchLayout>;
-};
-```
-
-### 심화예제 (데이터 패칭을 통해 SSR 적용하기)
-
-- src\pages\api 폴더
-- src\pages\api\alldata.ts
-
-```tsx
-import { GoodItemType } from "@/types";
-
-// 전체 상품 가져오기 API
-export const seedData: GoodItemType = [
-  [
-    {
-      id: 1,
-      title: "Fjallraven - Foldsack No. 1 Backpack, Fits 15 Laptops",
-      price: 109.95,
-      description:
-        "Your perfect pack for everyday use and walks in the forest. Stash your laptop (up to 15 inches) in the padded sleeve, your everyday",
-      category: "men's clothing",
-      image: "https://fakestoreapi.com/img/81fPKd-2AYL._AC_SL1500_.jpg",
-      rating: { rate: 3.9, count: 120 },
-    }
-    .
-    .
-    .
-  ],
-];
-```
-
-- src\pages\api\getallgood.tsx
-
-```tsx
-// Next.js API route support: https://nextjs.org/docs/api-routes/introduction
-import { GoodItemType } from "@/types";
-import type { NextApiRequest, NextApiResponse } from "next";
-import { seedData } from "./alldata";
-export default function handler(
-  req: NextApiRequest,
-  res: NextApiResponse<GoodItemType[]>
-) {
-  res.status(200).json(seedData);
-}
-```
-
-### 심화예제 (전체 상품 호출 fetch 함수)
-
-- fetch 함수들을 별도로 모아서 관리
-- `/src/lib 라는 폴더` 생성
-- `/src/lib/fetch-good.ts 파일` 생성
-
-```ts
-import { GoodItemType } from "@/types";
-
-export const fetchGoods = async (): Promise<GoodItemType[]> => {
-  const url = "http://localhost:3000/api/getallgood";
-  try {
-    // axios 사용해됩니다. 하지만, fetch 를 사용하자.
-    // 여기서 fetch 는 Next 에서 추천하고 기능이 더 추가됨.
-    const res = await fetch(url);
-    return res.json();
-  } catch (error) {
-    console.log(error);
-    return [];
-  }
-};
-```
-
-### 심화예제 (API 정의)
-
-- src\pages\api\getallgood.tsx
-
-```tsx
-// Next.js API route support: https://nextjs.org/docs/api-routes/introduction
-import type { NextApiRequest, NextApiResponse } from "next";
-import { seedData } from "./alldata";
-import { GoodItemType } from "@/types";
-export default function handler(
-  req: NextApiRequest,
-  res: NextApiResponse<GoodItemType[]>
-) {
-  res.status(200).json(seedData);
-}
-```
-
-- src\lib\fetch-goods.ts
-
-```ts
-import { GoodItemType } from "@/types";
-
-export const fetchGoods = async (): Promise<GoodItemType[]> => {
-  const url = "http://localhost:3000/api/getallgood";
-  try {
-    // axios 사용해됩니다. 하지만, fetch 를 사용하자.
-    // 여기서 fetch 는 Next 에서 추천하고 기능이 더 추가됨.
-    const res = await fetch(url);
-    return res.json();
-  } catch (error) {
-    console.log(error);
-    return [];
-  }
-};
-```
-
-- src\pages\api\random.ts
-
-```ts
-// Next.js API route support: https://nextjs.org/docs/api-routes/introduction
-import type { NextApiRequest, NextApiResponse } from "next";
-import { seedData } from "./alldata";
-import { GoodItemType } from "@/types";
-export default function handler(
-  req: NextApiRequest,
-  res: NextApiResponse<GoodItemType[]>
-) {
-  // 전체 데이터에서 랜덤하게 3개만 추출하기
-  const randomGoods = seedData.sort(() => Math.random() - 0.5).slice(0, 3);
-  res.status(200).json(randomGoods);
-}
-```
-
-- src\lib\fetch-random-good .ts
-
-```ts
-import { GoodItemType } from "@/types";
-
-export const fetchRandomGood = async (): Promise<GoodItemType[]> => {
-  const url = "http://localhost:3000/api/randomgood";
-  try {
-    const res = await fetch(url);
-    return res.json();
-  } catch (error) {
-    console.log(error);
-    return [];
-  }
-};
-```
+### 기본 예제
 
 - src\pages\index.tsx
+  `getStaticProps` 함수로 설정
+  InferGetStaticPropsType<typeof getStaticProps> 타입 자동 추론
 
 ```tsx
 import GoodItem from "@/components/good-item";
 import SearchLayout from "@/components/search-layout";
 import { fetchGoods } from "@/lib/fetch-goods";
+
 import { fetchRandomGood } from "@/lib/fetch-random-good";
 import styles from "@/pages/index.module.css";
-import { InferGetServerSidePropsType } from "next";
+import { InferGetStaticPropsType } from "next";
 import { ReactNode } from "react";
 
 // Next 에는 약속이 된 함수가 있다.
-export const getServerSideProps = async () => {
-  // 항상 객체를 리턴하고, 반드시 prop 라는 속성이 있어야 한다.
-  // 데이터를 미리 호출하여서 html 을 완성 리턴한다.
-
-  // const allGoods = await fetchGoods();
-  // const randomGoods = await fetchRandomGood();
-
+export const getStaticProps = async () => {
+  // 병렬로 실행하기
   const [allGoods, randomGoods] = await Promise.all([
     fetchGoods(),
     fetchRandomGood(),
   ]);
+
   return {
     props: {
       allGoods: allGoods,
@@ -253,7 +44,7 @@ export const getServerSideProps = async () => {
 export default function Home({
   allGoods,
   randomGoods,
-}: InferGetServerSidePropsType<typeof getServerSideProps>) {
+}: InferGetStaticPropsType<typeof getStaticProps>) {
   return (
     <div className={styles.container}>
       <section>
@@ -281,84 +72,38 @@ Home.getLayout = (page: ReactNode) => {
 };
 ```
 
-### 심화예제 (getServerSideProps 함수 검색 페이지에 SSR 및 데이터 패치 적용)
-
-1. API 정의하기
-
-- src\pages\search.tsx
-- src\pages\api\searchgood.ts
-
-```ts
-import { GoodItemType } from "@/types";
-import type { NextApiRequest, NextApiResponse } from "next";
-import { seedData } from "./alldata";
-export default function handler(
-  req: NextApiRequest,
-  res: NextApiResponse<GoodItemType[]>
-) {
-  // 요청(req) 에 의한 쿼리 (query) 처리하기
-  const { keyword } = req.query;
-  const filterGoods = seedData.filter((good) =>
-    good.title.includes(keyword as string)
-  );
-  res.status(200).json(filterGoods);
-}
-```
-
-2. Fetch 정의하기
-
-- src\lib\fetch-search-good.ts
-
-```ts
-import { GoodItemType } from "@/types";
-
-export const fetcgSearchGood = async (
-  keyword: string
-): Promise<GoodItemType[]> => {
-  const url = `http://localhost:3000/api/searchgood?keyword=${keyword}`;
-  try {
-    const res = await fetch(url);
-    return res.json();
-  } catch (error) {
-    console.log("error", error);
-    return [];
-  }
-};
-```
-
 - src\pages\search.tsx
 
 ```tsx
+import styles from "@/pages/search.module.css";
+// 앱 라우터버전 import { useRouter } from "next/navigation";
+import { useRouter } from "next/router";
+// import goods from "@/mock/goods.json";
 import GoodItem from "@/components/good-item";
 import SearchLayout from "@/components/search-layout";
-import { fetcgSearchGood } from "@/lib/fetch-search-good";
-import styles from "@/pages/search.module.css";
-import { GetServerSidePropsContext, InferGetServerSidePropsType } from "next";
-import { useRouter } from "next/router";
-import { ReactNode } from "react";
+import { ReactNode, useEffect, useState } from "react";
+import { GoodDataType } from "@/types";
+import { fetchSearchGood } from "@/lib/fetch-search-good";
 
-// SSR 과 데이터 패치 적용
-// 쿼리 스트링을 읽어서 데이터 패치를 하여야한다
-export async function getServerSideProps(context: GetServerSidePropsContext) {
-  // 쿼리스트링이 context 에 담긴다
-  const { keyword } = context.query;
-  const goods = await fetcgSearchGood(keyword);
-  return {
-    props: {
-      goods,
-    },
-  };
-}
+export default function Page() {
+  const [goods, setGoods] = useState<GoodDataType[]>([]);
 
-export default function Page({
-  goods,
-}: InferGetServerSidePropsType<typeof getServerSideProps>) {
   const router = useRouter();
   const { keyword } = router.query;
+
+  const fetchSearchResuit = async () => {
+    const data = await fetchSearchGood(keyword as string);
+  };
+
+  useEffect(() => {
+    // 키워드가 바뀌면 실행한다
+    fetchSearchResuit();
+  }, [keyword]);
+
   return (
     <div className={styles.container}>
       <h4>
-        <b>&quot; {keyword} &ldquo;</b> 에 대한 검색 결과 입니다.
+        <strong>{keyword}</strong> : 검색 결과
       </h4>
       <div>
         {goods.map((item) => (
@@ -374,40 +119,75 @@ Page.getLayout = (page: ReactNode) => {
 };
 ```
 
-### 심화예제 (함수 상세페이지)
+- src\pages\good\[id].tsx
 
-1. APi 정의
+1. SSG: 빌드 타임에 HTML 파일을 미리 생성하여 서버 요청 시 빠른 응답 제공
+2. 동적 경로: getStaticPaths 함수로 모든 가능한 경로를 미리 생성
+3. 상품 상세 페이지: http://localhost:3000/good/[id]와 같은 동적 경로 처리 가능
+4. 적용 방법: getStaticPaths 함수로 모든 경로를 미리 생성하여 SSG 적용
+5. 효과: 자주 바뀌지 않는 페이지에서 성능 향상
 
-- src\pages\api\onegood.ts
+```tsx
+import { fetchOneGood } from "@/lib/fetch-one-good";
+import styles from "@/pages/good/[id].module.css";
+import { GetServerSidePropsContext, InferGetStaticPropsType } from "next";
+import Image from "next/image";
 
-```ts
-import type { NextApiRequest, NextApiResponse } from "next";
-import { seedData } from "./alldata";
-import { GoodItemType } from "@/types";
-export default function handler(req: NextApiRequest, res: NextApiResponse<GoodItemType | null>) {
-  // 요청(req)에 의한 Params 처리하기
-  // URI 는 무조건 문자열로 처리됩니다.
-  const { id } = req.query;
-  const filterGoods = seedData.find((good) => good.id === parseInt(id as string));
-  res.status(200).json(filterGoods || null);
+// 라우터가 동적인 경로가 필요로 한 상황
+export function getStaticPaths() {
+  return {
+    // paths 에는 기본적으로 SSG 를 적용해서 데이터를 미리 생성후 반영할 경로
+    paths: [
+      { params: { id: "1" } },
+      { params: { id: "2" } },
+      { params: { id: "3" } },
+      { params: { id: "4" } },
+      { params: { id: "5" } },
+    ],
+    falback: false, // 위의 paths 에 없는 경로는 404 로 출력
+    // ture 인 경우 레이아웃 렌더링 후 데이터 로드, blockig 인 경우 즉시 SSG 로 생성
+  };
+}
 
-```
+export async function getStaticProps(context: GetServerSidePropsContext) {
+  // 쿼리 스트링이 context 에 담겨있음.
+  // const { keyword } = context.query;
 
-- src\lib\fetch-one-good.ts
+  // 파라메터는 context 에 담겨있음.
+  // 파라메터도 서버에서 문자열로만 온다.
+  const id = context.params!.id;
+  const data = await fetchOneGood(parseInt(id as string));
+  return {
+    props: {
+      data: data,
+    },
+  };
+}
 
-```ts
-import { GoodItemType } from "@/types";
-
-export const fetchOneGood = async (
-  id: number
-): Promise<GoodItemType | null> => {
-  const url = `http://localhost:3000/api/onegood/${id}`;
-  try {
-    const res = await fetch(url);
-    return res.json();
-  } catch (error) {
-    console.log(error);
-    return null;
+export default function Page({
+  data,
+}: InferGetStaticPropsType<typeof getStaticProps>) {
+  if (data === null) {
+    return <div>현재 데이터가 없습니다.</div>;
   }
-};
+  const { title, image, category, price, description, rating } = data;
+  return (
+    <div className={styles.container}>
+      <div className={styles.title}>
+        {title} <span>(${price})</span>
+      </div>
+      <div
+        className={styles.cover_image}
+        style={{ backgroundImage: `url(${image})` }}
+      >
+        <Image src={image} alt={title} width={245} height={350} />
+      </div>
+      <div className={styles.category}>{category}</div>
+      <div className={styles.rating}>
+        Rating : {rating.rate} | {rating.count}
+      </div>
+      <div className={styles.description}>{description}</div>
+    </div>
+  );
+}
 ```
