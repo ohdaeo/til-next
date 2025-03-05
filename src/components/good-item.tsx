@@ -1,4 +1,4 @@
-import { GoodItemType } from "@/types";
+import { GoodDataType } from "@/types";
 import Link from "next/link";
 import styles from "@/components/good-item.module.css";
 import Image from "next/image";
@@ -10,7 +10,7 @@ const GoodItem = ({
   category,
   price,
   rating,
-}: GoodItemType): JSX.Element => {
+}: GoodDataType): JSX.Element => {
   return (
     <Link href={`/good/${id}`} className={styles.container}>
       <Image src={image} alt={title} width={80} height={132} />

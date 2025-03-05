@@ -1,15 +1,14 @@
-// Next.js API route support: https://nextjs.org/docs/api-routes/introduction
-import type { NextApiRequest, NextApiResponse } from "next";
-import { seedData } from "./alldata";
 import { GoodDataType } from "@/types";
-export default function handler(
-  req: NextApiRequest,
-  res: NextApiResponse<GoodDataType[]>
-) {
-  // 요청(req)에 의한 쿼리(query) 처리하기
-  const { keyword } = req.query;
-  const filterGoods = seedData.filter((good) =>
-    good.title.includes(keyword as string)
-  );
-  res.status(200).json(filterGoods);
-}
+
+export const fetchGoods = async (): Promise<GoodDataType[]> => {
+  const url = "https://fakestoreapi.com/products";
+  try {
+    // axios 사용해됩니다. 하지만, fetch 를 사용하자.
+    // 여기서 fetch 는 Next 에서 추천하고 기능이 더 추가됨.
+    const res = await fetch(url);
+    return res.json();
+  } catch (error) {
+    console.log(error);
+    return [];
+  }
+};

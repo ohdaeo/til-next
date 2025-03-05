@@ -14,7 +14,7 @@ export function getStaticPaths() {
       { params: { id: "4" } },
       { params: { id: "5" } },
     ],
-    fallback: false, // 위의 paths 에 없는 경로는 404 로 출력
+    fallback: blockig, // false 인 경우 paths 에 없는 경로는 404 로 출력
     // ture 인 경우 레이아웃 렌더링 후 데이터 로드, blockig 인 경우 즉시 SSG 로 생성
   };
 }

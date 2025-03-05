@@ -1,31 +1,16 @@
 ![nextjs](https://svgmix.com/uploads/0b55b6-nextjs-icon.svg)
 
-# SSG
+# ISR
 
-Static Site Generation(정적 사이트 생성)
-빌드 시점: 개발자가 애플리케이션 또는 Next 프로젝트를 빌드할 때 사전 렌더링 페이지가 생성됩니다.
-변경 불가: 배포된 후에는 사전 렌더링 페이지가 변경되지 않으므로, 변경하려면 빌드와 재 배포가 필요합니다.
-용도: 자주 바뀌지 않는 페이지에 적합합니다.
-사용 범위: 'pages' 폴더 내의 컴포넌트 파일에서만 사용 가능합니다.
-성능: Static에 캐시되어 빠른 응답을 제공합니다.
+- Incremental Static Regeneration
 
-### 기본 예제
+> 공식문서
+> 전체 사이트를 재빌드할 필요 없이 페이지별로 정적 생성을 사용할 수 있습니다.
+> ISR을 사용하면 정적 페이지의 장점을 유지하면서 수백만 개의 페이지로 확장할 수 있습니다.
 
 - src\pages\index.tsx
-  `getStaticProps` 함수로 설정
-  InferGetStaticPropsType<typeof getStaticProps> 타입 자동 추론
 
 ```tsx
-import GoodItem from "@/components/good-item";
-import SearchLayout from "@/components/search-layout";
-import { fetchGoods } from "@/lib/fetch-goods";
-
-import { fetchRandomGood } from "@/lib/fetch-random-good";
-import styles from "@/pages/index.module.css";
-import { InferGetStaticPropsType } from "next";
-import { ReactNode } from "react";
-
-// Next 에는 약속이 된 함수가 있다.
 export const getStaticProps = async () => {
   // 병렬로 실행하기
   const [allGoods, randomGoods] = await Promise.all([
@@ -38,156 +23,127 @@ export const getStaticProps = async () => {
       allGoods: allGoods,
       randomGoods: randomGoods,
     },
+    revalidate: 60, // 60초후 다시생성
   };
-};
-
-export default function Home({
-  allGoods,
-  randomGoods,
-}: InferGetStaticPropsType<typeof getStaticProps>) {
-  return (
-    <div className={styles.container}>
-      <section>
-        <h3>지금 추천하는 상품</h3>
-        {/* 3개만 랜덤하게 출력 */}
-        {randomGoods.map((item) => (
-          <GoodItem key={item.id} {...item} />
-        ))}
-      </section>
-      <section>
-        <h3>등록된 모든 상품</h3>
-        {/* 전체 상품 출력 */}
-        {allGoods.map((item) => (
-          <GoodItem key={item.id} {...item} />
-        ))}
-      </section>
-    </div>
-  );
-}
-
-// JS 에서는 함수도 객체다.
-// 객체는 속성을 추가할 수 있다.
-Home.getLayout = (page: ReactNode) => {
-  return <SearchLayout>{page}</SearchLayout>;
 };
 ```
 
-- src\pages\search.tsx
+### API 호출로 재생성하기
+
+- src\pages\api\revalidate.ts
+- /api/revalidate
 
 ```tsx
-import styles from "@/pages/search.module.css";
-// 앱 라우터버전 import { useRouter } from "next/navigation";
-import { useRouter } from "next/router";
-// import goods from "@/mock/goods.json";
-import GoodItem from "@/components/good-item";
-import SearchLayout from "@/components/search-layout";
-import { ReactNode, useEffect, useState } from "react";
-import { GoodDataType } from "@/types";
-import { fetchSearchGood } from "@/lib/fetch-search-good";
-
-export default function Page() {
-  const [goods, setGoods] = useState<GoodDataType[]>([]);
-
-  const router = useRouter();
-  const { keyword } = router.query;
-
-  const fetchSearchResuit = async () => {
-    const data = await fetchSearchGood(keyword as string);
-  };
-
-  useEffect(() => {
-    // 키워드가 바뀌면 실행한다
-    fetchSearchResuit();
-  }, [keyword]);
-
-  return (
-    <div className={styles.container}>
-      <h4>
-        <strong>{keyword}</strong> : 검색 결과
-      </h4>
-      <div>
-        {goods.map((item) => (
-          <GoodItem key={item.id} {...item} />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-Page.getLayout = (page: ReactNode) => {
-  return <SearchLayout>{page}</SearchLayout>;
-};
-```
-
-- src\pages\good\[id].tsx
-
-1. SSG: 빌드 타임에 HTML 파일을 미리 생성하여 서버 요청 시 빠른 응답 제공
-2. 동적 경로: getStaticPaths 함수로 모든 가능한 경로를 미리 생성
-3. 상품 상세 페이지: http://localhost:3000/good/[id]와 같은 동적 경로 처리 가능
-4. 적용 방법: getStaticPaths 함수로 모든 경로를 미리 생성하여 SSG 적용
-5. 효과: 자주 바뀌지 않는 페이지에서 성능 향상
-
-```tsx
-import { fetchOneGood } from "@/lib/fetch-one-good";
-import styles from "@/pages/good/[id].module.css";
-import { GetServerSidePropsContext, InferGetStaticPropsType } from "next";
-import Image from "next/image";
-
-// 라우터가 동적인 경로가 필요로 한 상황
-export function getStaticPaths() {
-  return {
-    // paths 에는 기본적으로 SSG 를 적용해서 데이터를 미리 생성후 반영할 경로
-    paths: [
-      { params: { id: "1" } },
-      { params: { id: "2" } },
-      { params: { id: "3" } },
-      { params: { id: "4" } },
-      { params: { id: "5" } },
-    ],
-    falback: false, // 위의 paths 에 없는 경로는 404 로 출력
-    // ture 인 경우 레이아웃 렌더링 후 데이터 로드, blockig 인 경우 즉시 SSG 로 생성
-  };
-}
-
-export async function getStaticProps(context: GetServerSidePropsContext) {
-  // 쿼리 스트링이 context 에 담겨있음.
-  // const { keyword } = context.query;
-
-  // 파라메터는 context 에 담겨있음.
-  // 파라메터도 서버에서 문자열로만 온다.
-  const id = context.params!.id;
-  const data = await fetchOneGood(parseInt(id as string));
-  return {
-    props: {
-      data: data,
-    },
-  };
-}
-
-export default function Page({
-  data,
-}: InferGetStaticPropsType<typeof getStaticProps>) {
-  if (data === null) {
-    return <div>현재 데이터가 없습니다.</div>;
+import type { NextApiRequest, NextApiResponse } from "next";
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
+  try {
+    await res.revalidate("/");
+    return res.json({ revalidate: true });
+  } catch (error) {
+    console.log(error);
+    return res.status(200).send("Error Revalidate");
   }
-  const { title, image, category, price, description, rating } = data;
-  return (
-    <div className={styles.container}>
-      <div className={styles.title}>
-        {title} <span>(${price})</span>
-      </div>
-      <div
-        className={styles.cover_image}
-        style={{ backgroundImage: `url(${image})` }}
-      >
-        <Image src={image} alt={title} width={245} height={350} />
-      </div>
-      <div className={styles.category}>{category}</div>
-      <div className={styles.rating}>
-        Rating : {rating.rate} | {rating.count}
-      </div>
-      <div className={styles.description}>{description}</div>
-    </div>
-  );
 }
 ```
+
+- src\pages\api\fetch-revalidate.ts
+
+```tsx
+export const FerchRevalidate = async () => {
+  const url = `http://localhost:3000/api/revalidate`;
+  try {
+    await fetch(url);
+  } catch (error) {
+    console.log(error);
+  }
+};
+```
+
+```tsx
+onClick = { FerchRevalidate };
+```
+
+### 서버 연동 처리
+
+- src\pages\api\getallgood.tsx
+
+```tsx
+// Next.js API route support: https://nextjs.org/docs/api-routes/introduction
+import type { NextApiRequest, NextApiResponse } from "next";
+// import { seedData } from "./alldata";
+import { GoodDataType } from "@/types";
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse<GoodDataType[]>
+) {
+  const data = await fetch("https://fakestoreapi.com/products");
+  const json = await data.json();
+  res.status(200).json(json);
+}
+```
+
+- src\pages\api\onegood.ts
+
+```tsx
+import type { NextApiRequest, NextApiResponse } from "next";
+
+import { GoodDataType } from "@/types";
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse<GoodDataType | null>
+) {
+  // 요청(req)에 의한 Params 처리하기
+  // URI 는 무조건 문자열로 처리됩니다.
+  const { id } = req.query;
+  const data = await fetch(`https://fakestoreapi.com/products/${id}`);
+  const json = await data.json();
+  res.status(200).json(json || null);
+}
+```
+
+- src\pages\api\randomgood.ts
+
+```tsx
+// Next.js API route support: https://nextjs.org/docs/api-routes/introduction
+import type { NextApiRequest, NextApiResponse } from "next";
+// import { seedData } from "./alldata";
+import { GoodDataType } from "@/types";
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse<GoodDataType[]>
+) {
+  // 전체 데이터에서 랜덤하게 3개만 추출하기
+  const data = await fetch("https://fakestoreapi.com/products");
+  const json = await data.json();
+  const randomGoods = json.sort(() => Math.random() - 0.5).slice(0, 3);
+  res.status(200).json(randomGoods);
+}
+```
+
+- src\pages\api\searchgood.ts
+
+```tsx
+// Next.js API route support: https://nextjs.org/docs/api-routes/introduction
+import { GoodDataType } from "@/types";
+import type { NextApiRequest, NextApiResponse } from "next";
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse<GoodDataType[]>
+) {
+  // 요청(req)에 의한 쿼리(query) 처리하기
+  const { keyword } = req.query;
+
+  const data = await fetch(`https://fakestoreapi.com/products`);
+  const json = await data.json();
+
+  const filterGoods = json.filter((good: GoodDataType) =>
+    good.title.includes(keyword as string)
+  );
+  res.status(200).json(filterGoods);
+}
+```
+
+**Fake Api 는 build 생성이 안되니까 참고하자**

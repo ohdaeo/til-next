@@ -1,8 +1,8 @@
 import GoodItem from "@/components/good-item";
 import SearchLayout from "@/components/search-layout";
 import { fetchGoods } from "@/lib/fetch-goods";
-
 import { fetchRandomGood } from "@/lib/fetch-random-good";
+
 import styles from "@/pages/index.module.css";
 import { InferGetStaticPropsType } from "next";
 import { ReactNode } from "react";
@@ -20,6 +20,7 @@ export const getStaticProps = async () => {
       allGoods: allGoods,
       randomGoods: randomGoods,
     },
+    revalidate: 60, // 60초후 다시생성
   };
 };
 
