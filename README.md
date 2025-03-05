@@ -1,149 +1,158 @@
 ![nextjs](https://svgmix.com/uploads/0b55b6-nextjs-icon.svg)
 
-# ISR
+# SEO
 
-- Incremental Static Regeneration
+- Search Engine Optimization (검색 엔진 최적화)
 
-> 공식문서
-> 전체 사이트를 재빌드할 필요 없이 페이지별로 정적 생성을 사용할 수 있습니다.
-> ISR을 사용하면 정적 페이지의 장점을 유지하면서 수백만 개의 페이지로 확장할 수 있습니다.
+### SEO 설정
 
 - src\pages\index.tsx
 
 ```tsx
-export const getStaticProps = async () => {
-  // 병렬로 실행하기
-  const [allGoods, randomGoods] = await Promise.all([
-    fetchGoods(),
-    fetchRandomGood(),
-  ]);
+export default function Home({}: InferGetStaticPropsType<
+  typeof getStaticProps
+>) {
+  return (
+    <>
+      <Head>
+        <title>해외 쇼핑몰 추천 서비스</title>
+        <meta name="discription" content="해외 상품 추천서비스 입니다." />
+        <meta property="og:title" content="해외 쇼핑몰 추천 서비스" />
+        <meta
+          property="og:discription"
+          content="해외 쇼핑몰 추천 서비스입니다"
+        />
+        <meta property="og:image" content="/thumbnail.png" />
+      </Head>
+    </>
+  );
+}
+```
 
+**주의사항**
+
+- import Head from "next/head"; 하기
+- meta 태그의 속성은 다양하게 찾아 넣어보기
+
+- src\pages\search.tsx
+
+```tsx
+<>
+  <Head>
+    <title>해외 쇼핑몰 {keyword}검색 서비스</title>
+    <meta
+      name="discription"
+      content={`해외 상품 {keyword} 검색서비스 입니다.`}
+    />
+    <meta property="og:title" content={`해외 쇼핑몰 검색 서비스`} />
+    <meta property="og:discription" content={`해외 쇼핑몰 검색 서비스입니다`} />
+    <meta property="og:image" content="/thumbnail.png" />
+  </Head>
+</>
+```
+
+```tsx
+import { fetchOneGood } from "@/lib/fetch-one-good";
+import styles from "@/pages/good/[id].module.css";
+import {
+  GetServerSidePropsContext,
+  InferGetServerSidePropsType,
+  InferGetStaticPropsType,
+} from "next";
+import Head from "next/head";
+import Image from "next/image";
+import { useRouter } from "next/router";
+// 라우터가 동적인 경로가 필요로 한 상황이다.
+// http://localhost:3000/good/[id]   ===> 파라메터
+export function getStaticPaths() {
+  return {
+    // paths 에는 기본적으로 SSG 를 적용해서 데이터를 미리 생성후 반영할 경로
+    paths: [{ params: { id: "1" } }, { params: { id: "2" } }],
+    // fallback: false, // 위의 paths 에 없는 경로는 404 로 출력
+    fallback: true, // 위의 paths 에 없는 경로는 레이아웃 렌더링 후 데이터 로드
+    // fallback: "blocking", // 위의 paths 에 없는 경로는 즉시 SSR 로 생성
+  };
+}
+
+export async function getStaticProps(context: GetServerSidePropsContext) {
+  // 쿼리 스트링이 context 에 담겨있음.
+  // const { keyword } = context.query;
+
+  // 파라메터는 context 에 담겨있음.
+  // 파라메터도 서버에서 문자열로만 온다.
+  const id = context.params!.id;
+  const data = await fetchOneGood(parseInt(id as string));
   return {
     props: {
-      allGoods: allGoods,
-      randomGoods: randomGoods,
+      data: data,
     },
-    revalidate: 60, // 60초후 다시생성
   };
-};
-```
+}
 
-### API 호출로 재생성하기
-
-- src\pages\api\revalidate.ts
-- /api/revalidate
-
-```tsx
-import type { NextApiRequest, NextApiResponse } from "next";
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-  try {
-    await res.revalidate("/");
-    return res.json({ revalidate: true });
-  } catch (error) {
-    console.log(error);
-    return res.status(200).send("Error Revalidate");
+export default function Page({
+  data,
+}: InferGetStaticPropsType<typeof getStaticProps>) {
+  const router = useRouter();
+  if (router.isFallback) {
+    return (
+      <>
+        <Head>
+          <title>해외 쇼핑몰 추천 서비스</title>
+          <meta name="discription" content="해외 상품 추천서비스입니다." />
+          <meta property="og:title" content="해외 쇼핑몰 추천 서비스" />
+          <meta
+            property="og:discription"
+            content="해외 상품 추천서비스입니다."
+          />
+          <meta property="og:image" content="/thumbnail.png" />
+        </Head>
+        <div>Loading...</div>
+      </>
+    );
   }
-}
-```
 
-- src\pages\api\fetch-revalidate.ts
-
-```tsx
-export const FerchRevalidate = async () => {
-  const url = `http://localhost:3000/api/revalidate`;
-  try {
-    await fetch(url);
-  } catch (error) {
-    console.log(error);
+  // 데이터가 있지 않다면
+  if (!data) {
+    return (
+      <>
+        <Head>
+          <title>해외 쇼핑몰 추천 서비스</title>
+          <meta name="discription" content="제품정보가 없습니다." />
+          <meta property="og:title" content="제품정보가 없습니다." />
+          <meta property="og:discription" content="제품정보가 없습니다." />
+          <meta property="og:image" content="/thumbnail.png" />
+        </Head>
+        <div>현재 데이터가 없습니다.</div>
+      </>
+    );
   }
-};
-```
-
-```tsx
-onClick = { FerchRevalidate };
-```
-
-### 서버 연동 처리
-
-- src\pages\api\getallgood.tsx
-
-```tsx
-// Next.js API route support: https://nextjs.org/docs/api-routes/introduction
-import type { NextApiRequest, NextApiResponse } from "next";
-// import { seedData } from "./alldata";
-import { GoodDataType } from "@/types";
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse<GoodDataType[]>
-) {
-  const data = await fetch("https://fakestoreapi.com/products");
-  const json = await data.json();
-  res.status(200).json(json);
-}
-```
-
-- src\pages\api\onegood.ts
-
-```tsx
-import type { NextApiRequest, NextApiResponse } from "next";
-
-import { GoodDataType } from "@/types";
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse<GoodDataType | null>
-) {
-  // 요청(req)에 의한 Params 처리하기
-  // URI 는 무조건 문자열로 처리됩니다.
-  const { id } = req.query;
-  const data = await fetch(`https://fakestoreapi.com/products/${id}`);
-  const json = await data.json();
-  res.status(200).json(json || null);
-}
-```
-
-- src\pages\api\randomgood.ts
-
-```tsx
-// Next.js API route support: https://nextjs.org/docs/api-routes/introduction
-import type { NextApiRequest, NextApiResponse } from "next";
-// import { seedData } from "./alldata";
-import { GoodDataType } from "@/types";
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse<GoodDataType[]>
-) {
-  // 전체 데이터에서 랜덤하게 3개만 추출하기
-  const data = await fetch("https://fakestoreapi.com/products");
-  const json = await data.json();
-  const randomGoods = json.sort(() => Math.random() - 0.5).slice(0, 3);
-  res.status(200).json(randomGoods);
-}
-```
-
-- src\pages\api\searchgood.ts
-
-```tsx
-// Next.js API route support: https://nextjs.org/docs/api-routes/introduction
-import { GoodDataType } from "@/types";
-import type { NextApiRequest, NextApiResponse } from "next";
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse<GoodDataType[]>
-) {
-  // 요청(req)에 의한 쿼리(query) 처리하기
-  const { keyword } = req.query;
-
-  const data = await fetch(`https://fakestoreapi.com/products`);
-  const json = await data.json();
-
-  const filterGoods = json.filter((good: GoodDataType) =>
-    good.title.includes(keyword as string)
+  const { title, image, category, price, description, rating } = data;
+  return (
+    <>
+      <Head>
+        <title>{title} 상세정보 </title>
+        <meta name="discription" content={description} />
+        <meta property="og:title" content={title} />
+        <meta property="og:discription" content={description} />
+        <meta property="og:image" content={image} />
+      </Head>
+      <div className={styles.container}>
+        <div className={styles.title}>
+          {title} <span>(${price})</span>
+        </div>
+        <div
+          className={styles.cover_image}
+          style={{ backgroundImage: `url(${image})` }}
+        >
+          <Image src={image} alt={title} width={245} height={350} />
+        </div>
+        <div className={styles.category}>{category}</div>
+        <div className={styles.rating}>
+          Rating : {rating.rate} | {rating.count}
+        </div>
+        <div className={styles.description}>{description}</div>
+      </div>
+    </>
   );
-  res.status(200).json(filterGoods);
 }
 ```
-
-**Fake Api 는 build 생성이 안되니까 참고하자**
