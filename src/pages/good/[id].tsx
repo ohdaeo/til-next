@@ -1,43 +1,46 @@
-import { GoodItemType } from "@/types";
-import { useRouter } from "next/router";
+import { fetchOneGood } from "@/lib/fetch-one-good";
 import styles from "@/pages/good/[id].module.css";
+import { GetServerSidePropsContext, InferGetServerSidePropsType } from "next";
+import Image from "next/image";
 
-const mockData: GoodItemType = {
-  id: 1,
-  title: "Fjallraven - Foldsack No. 1 Backpack, Fits 15 Laptops",
-  price: 109.95,
-  description:
-    "Your perfect pack for everyday use and walks in the forest. Stash your laptop (up to 15 inches) in the padded sleeve, your everyday",
-  category: "men's clothing",
-  image: "https://fakestoreapi.com/img/81fPKd-2AYL._AC_SL1500_.jpg",
-  rating: { rate: 3.9, count: 120 },
-};
+export async function getServerSideProps(context: GetServerSidePropsContext) {
+  // 쿼리 스트링이 context 에 담겨있음.
+  // const { keyword } = context.query;
 
-export default function Page() {
-  const { category, description, image, price, rating, title } = mockData;
+  // 파라메터는 context 에 담겨있음.
+  // 파라메터도 서버에서 문자열로만 온다.
+  const id = context.params!.id;
+  const data = await fetchOneGood(parseInt(id as string));
+  return {
+    props: {
+      data: data,
+    },
+  };
+}
+
+export default function Page({
+  data,
+}: InferGetServerSidePropsType<typeof getServerSideProps>) {
+  if (data === null) {
+    return <div>현재 데이터가 없습니다.</div>;
+  }
+  const { title, image, category, price, description, rating } = data;
   return (
     <div className={styles.container}>
-      <ul className={styles.box}>
-        <li className={styles.boxitem}>
-          <img
-            src={image}
-            alt={title}
-            // style={{ backgroundImage: `url(${image})` }}
-          />
-          <div className={styles.txt}>
-            <p>
-              {category}
-              <span>
-                ⭐ {rating.rate} · {rating.count}
-              </span>
-            </p>
-
-            <h3>{title}</h3>
-            <small>{description}</small>
-            <h1>$ {price}</h1>
-          </div>
-        </li>
-      </ul>
+      <div className={styles.title}>
+        {title} <span>(${price})</span>
+      </div>
+      <div
+        className={styles.cover_image}
+        style={{ backgroundImage: `url(${image})` }}
+      >
+        <Image src={image} alt={title} width={245} height={350} />
+      </div>
+      <div className={styles.category}>{category}</div>
+      <div className={styles.rating}>
+        Rating : {rating.rate} | {rating.count}
+      </div>
+      <div className={styles.description}>{description}</div>
     </div>
   );
 }
